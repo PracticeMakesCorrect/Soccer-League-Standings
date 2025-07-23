@@ -1,0 +1,73 @@
+Given a sql table of soccer matches results, write an SQL query to construct the league standings.  
+ 
+So, from the input table: Table “Matches” 
+ 
+| HomeTeam  | AwayTeam | HomeScore | AwayScore |
+|-----------|----------|-----------|-----------|
+| Argentina | Nigeria  | 2         | 0         |
+| Germany   | Japan    | 1         | 1         |
+| Japan     | Argentina| 0         | 1         |
+| Germany   | Nigeria  | 2         | 3         |
+| Nigeria   | Japan    | 0         | 0         |
+| Germany   | Argentina| 1         | 0         |
+ 
+Create the following table: Table “Ranking” 
+ 
+| Team      | Scored | Received | GoalDiff | Points |
+|-----------|--------|----------|----------|--------|
+| Argentina | 3      | 1        | 2        | 6      |
+| Germany   | 4      | 4        | 0        | 4      |
+| Nigeria   | 3      | 4        | -1       | 4      |
+| Japan     | 1      | 2        | -1       | 2      |
+ 
+Pointing rules: 
+•	Team gets 3 points for a win, 1 point for tie, 0 points for loss 
+•	Team positions determined by number of points, if tied position is determined by the better “goal difference” meaning Goals Scored minus Goals received.  
+ 
+ANSWER 
+ 
+--Table from the perspective of the Home Team 
+WITH home AS ( 
+SELECT  
+  hometeam as Team, SUM(homescore) as scored, SUM(awayscore) AS received, 
+  SUM( 
+  CASE 
+ 	WHEN homescore > awayscore THEN 3 
+ 	when homescore = awayscore THEN 1 
+  	ELSE 0 
+  END 
+  ) AS points 
+FROM 
+  Matches 
+GROUP BY  
+  hometeam 
+), 
+ 
+--Table from the perspective of the Away Team. In this case, AwayScore counts as goals scored instead of received. 
+away as ( 
+SELECT  
+  awayteam as Team, SUM(awayscore) AS scored, SUM(homescore) AS received, 
+  SUM( 
+  CASE 
+  	WHEN awayscore > homescore THEN 3 
+  	when awayscore = homescore THEN 1 
+  	ELSE 0 
+  END 
+  ) as points 
+FROM 
+  Matches 
+GROUP BY  
+  awayteam 
+) 
+ 
+SELECT  
+    COALESCE(home.Team, away.Team) AS Team, 
+    COALESCE(home.scored,0) + COALESCE(away.scored,0) AS Scored, 
+    COALESCE(home.received,0) + COALESCE(away.received,0) AS Received, 
+    (COALESCE(home.scored,0) + COALESCE(away.scored,0)) - (COALESCE(home.received,0) + COALESCE(away.received,0)) AS GoalDiff, 
+    COALESCE(home.points,0) + COALESCE(away.points,0) AS Points 
+FROM 
+home 
+FULL OUTER JOIN away ON home.Team = away.Team --Added full outer join in case a country in AwayTeam later appears in the dataset and it does not appear in HomeTeam 
+ORDER BY Points DESC, GoalDiff DESC; 
+
