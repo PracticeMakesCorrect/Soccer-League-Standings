@@ -21,5 +21,7 @@ Create the following table: Table “Ranking”
 | Japan     | 1      | 2        | -1       | 2      |
  
 Pointing rules: 
+
 •	Team gets 3 points for a win, 1 point for tie, 0 points for loss 
+
 •	Team positions determined by number of points, if tied position is determined by the better “goal difference” meaning Goals Scored minus Goals received.  
